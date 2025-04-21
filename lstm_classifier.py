@@ -12,7 +12,7 @@ from sentimentLSTM import TweetDataset
 import torch.nn.utils.rnn
 import pickle
 
-
+download_nltk_resources()
 raw_train_data = load_data("data/train.csv")
 #remove unnecessary columns
 train_data = preprocess_df(raw_train_data)

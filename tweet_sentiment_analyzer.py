@@ -25,7 +25,7 @@ while model_choice not in [0, 1]:
 if model_choice == 0:
     text = None
     while text != "q":
-        # load the logreg model and tokenizer
+        #load the logreg model and tokenizer
         tokenizer, log_reg_model = load_logreg_model(tokenizer_path, log_reg_model_path)
         print("Enter a tweet to analyze sentiment, or press q to exit:")
         try:

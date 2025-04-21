@@ -6,6 +6,7 @@ from helper_functions import *
 from sklearn.linear_model import LogisticRegression
 import pickle
 
+download_nltk_resources()
 raw_train_data = load_data("data/train.csv")
 # visualize_data(raw_train_data)
 train_data = preprocess_df(raw_train_data)

@@ -11,16 +11,28 @@ import pickle
 import torch
 from sentimentLSTM import SentimentLSTM
 
-try:
-    nltk.data.find("tokenizers/punkt")
-    pass
-except LookupError:
-    nltk.download("punkt")
-try:
-    nltk.data.find("corpora/stopwords")
-    pass
-except LookupError:
-    nltk.download("stopwords")
+def download_nltk_resources():
+    try:
+        nltk.data.find("tokenizers/punkt")
+        pass
+    except LookupError:
+        nltk.download("punkt")
+    try:
+        nltk.data.find("corpora/stopwords")
+        pass
+    except LookupError:
+        nltk.download("stopwords")
+    try:
+        nltk.data.find("tokenizers/punkt_tab")
+        pass
+    except LookupError:
+        nltk.download("punkt_tab")
+
+    try:
+        nltk.data.find("corpora/wordnet.zip")
+        pass
+    except LookupError:
+        nltk.download("wordnet")
 
 def load_data(path):
     raw_train_data = pd.read_csv(path, encoding="unicode_escape")
@@ -52,8 +64,10 @@ def load_lstm_model(vocab_path, lstm_model_path):
         print("Vocabulary file not found at " + str(vocab_path) + ". Please check the path.")
         exit()
     try:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         lstm_model = SentimentLSTM(vocab_size=len(vocab))
-        lstm_model.load_state_dict(torch.load(lstm_model_path))
+        lstm_model.load_state_dict(torch.load(lstm_model_path, map_location=device))
+        lstm_model.to(device)
         lstm_model.eval()
     except FileNotFoundError:
         print("LSTM model file not found at " + str(lstm_model_path) + ". Please check the path.")
@@ -116,27 +130,22 @@ def preprocess_df(raw_train_data, train=True):
     else: 
         raw_train_data = raw_train_data.drop(columns=["textID", "Time of Tweet", "Age of User", "Country", "Population -2020", "Land Area (Km²)", "Density (P/Km²)"])
 
-    #remove rows with empty text
     raw_train_data = raw_train_data[raw_train_data["text"] != ""]
-    #remove rows with empty label
     raw_train_data = raw_train_data[raw_train_data["sentiment"] != ""]
     train_data = raw_train_data.copy()
     #change sentiment to label
     replace_dict = {"neutral": "1", "positive": "2", "negative": "0"}
     train_data["sentiment"] = raw_train_data["sentiment"].replace(replace_dict)
     train_data["label"] = train_data["sentiment"].astype(int)
-    #remove sentiment column
     train_data = train_data.drop(columns=["sentiment"])
     return train_data
 
 #balance the dataset through downsampling
 def balance_data(train_data):    
-    #Get amount of neutral, positive, negative tweets
     neutral_tweets = train_data[train_data["label"] == 1]
     positive_tweets = train_data[train_data["label"] == 2]
     negative_tweets = train_data[train_data["label"] == 0]
     min_tweets = min(len(neutral_tweets), len(positive_tweets), len(negative_tweets))
-    #Downsample the data to have equal amount of tweets for each sentiment
     train_data = pd.concat([neutral_tweets.sample(min_tweets), positive_tweets.sample(min_tweets), negative_tweets.sample(min_tweets)])
     train_data = train_data.sample(frac=1)
     return train_data
